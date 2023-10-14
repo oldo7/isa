@@ -62,4 +62,5 @@ int main(int argc, char *argv[]){
     }
 
     //printf("flagr: %d \n flagx: %d \n flag6: %d \n server: %s \n port: %d \n adresa: %s \n", flagr, flagx, flag6, ser, port, addr);
+    //test
 }
