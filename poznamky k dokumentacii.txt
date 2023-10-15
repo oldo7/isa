@@ -1,0 +1,2 @@
+time.h sa pouziva pre vygenerovanie nahodneho cisla ako ID DNS dotazu
+ak sa z odpovede serveru zisti chyba (v sekcii response code), chyba sa vypise na vystup a program konci

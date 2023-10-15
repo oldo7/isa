@@ -5,11 +5,14 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <signal.h>
+#include <time.h>
+
+#define MAX_RESPONSE 512
 
 //funkcia ktora ako parametre vezme pole header a hodnoty jednotlivych flagov, a pole naplni spravnymi hodnotami hlavicky. vrati naplnenu hlavicku.
-void make_header(char *header){
-    header[0] = 0xdb;
-    header[1] = 0x42;
+int make_header(unsigned char *header){
+    header[0] = rand()%256;
+    header[1] = rand()%256;
     header[2] = 0x01;
     header[3] = 0x00;
     header[4] = 0x00;
@@ -46,6 +49,64 @@ void make_header(char *header){
     header[35] = 0x01;
     header[36] = 0x00;
     header[37] = 0x01;
+
+    return header[0]*256 + header[1]; //vrati hodnotu ID na neskorsiu kontrolu
+}
+
+void print_dns_response(int ID, unsigned char *response){
+    //kontrola ci prijate id je rovnake ako odoslane
+    if(ID != response[0]*256 + response[1]){
+        fprintf(stderr, "prijata odpoved nebola sparovana s odoslanym dotazom");
+        exit(EXIT_FAILURE);
+    }
+
+    //kontrola flagu QR
+    unsigned char qr = response[2] & 0x80;
+    if(qr == 0){
+        fprintf(stderr, "prijata odpoved ma nespravnu hodnotu QR");
+        exit(EXIT_FAILURE);
+    }
+
+    //ak flag == 0 tak hodnota bude nulova, inak bude nenulova
+    unsigned char aa = response[2] & 0x64;  
+    unsigned char tc = response[2] & 0xA;
+    unsigned char rd = response[2] & 0x1;
+    unsigned char ra = response[3] & 0x80;
+    unsigned char rcode = response[3] & 0xF;
+    int qdcount = response[4] * 256 + response[5];
+    int ancount = response[6] * 256 + response[7];
+    int nscount = response[8] * 256 + response[9];
+    int arcount = response[10] * 256 + response[11];
+
+    switch (rcode)
+    {
+    case 1:
+        printf("Response code 1 : Server nedokazal interpretovat poziadavok");
+        exit(EXIT_SUCCESS);
+        break;
+    case 2:
+        printf("Response code 2 : Chyba DNS servera");
+        exit(EXIT_SUCCESS);
+        break;
+    case 3:
+        printf("Response code 3 : Domenove meno v poziadavku neexistuje");
+        exit(EXIT_SUCCESS);
+        break;
+    case 4:
+        printf("Response code 4 : Server nepodporuje dany typ poziadavku");
+        exit(EXIT_SUCCESS);
+        break;
+    case 5:
+        printf("Response code 5 : Server odmietol vykonat pozadovanu operaciu");
+        exit(EXIT_SUCCESS);
+        break;
+    default:
+        break;
+    }
+    // printf(" aa = %x \n tc = %x \n rd = %x \n ra = %x \n rcode = %x \n qdcount = %d \n ancount = %d \n nscount = %d \n arcount = %d \n ", aa, tc, rd, ra, rcode, qdcount, ancount, nscount, arcount);
+
+    //vypisanie jednotlivych sekcii
+
 }
 
 int get_socket_udp(){
@@ -126,18 +187,21 @@ int main(int argc, char *argv[]){
         exit(EXIT_FAILURE);
     }
 
-    printf("flagr: %d \n flagx: %d \n flag6: %d \n server na ktory sa dotaz posiela: %s \n port: %d \n dotazovana adresa: %s \n", flagr, flagx, flag6, host, port, dotaddr);
+    // printf("flagr: %d \n flagx: %d \n flag6: %d \n server na ktory sa dotaz posiela: %s \n port: %d \n dotazovana adresa: %s \n", flagr, flagx, flag6, host, port, dotaddr);
+    srand(time(NULL));
 
     struct sockaddr_in server_address = get_adress(host, port);
     struct sockaddr *addr = (struct sockaddr *) &server_address;
 
-    size_t len = 0;
     int client_socket = get_socket_udp();
 
     //vytvorit header
     char header[38]; //header ma pevnu dlzku 12 bytov
-    make_header(header);
-    
+    int ID = make_header(header);
+    //make_body
+    //join header and body
+
+    //odosle vytvoreny DNS dotaz
     int bytes_tx = sendto(client_socket, header, 38,0 , addr, sizeof(server_address));
     if (bytes_tx < 0){
         perror("ERROR: sendto");
@@ -145,14 +209,12 @@ int main(int argc, char *argv[]){
     
     //ziska odpoved a vytiskne ju
     socklen_t address_size = sizeof(server_address);
-    char response[65000] = "";
+    unsigned char response[MAX_RESPONSE] = "";
+
     int bytes_rx = recvfrom(client_socket, response, 65000,0, addr, &address_size);
     if (bytes_rx < 0){
        perror("ERROR: recvfrom");
     }
-    
-    //vymazat
-    for(int i = 0; i< 50; i++){
-        printf("char %u : %u \n",i, response[i]);
-    }
+
+    print_dns_response(ID, response);
 }
