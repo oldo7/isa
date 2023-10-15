@@ -53,6 +53,50 @@ int make_header(unsigned char *header){
     return header[0]*256 + header[1]; //vrati hodnotu ID na neskorsiu kontrolu
 }
 
+void printquestion(int* i, unsigned char* response){
+    while(response[*i] != 0){
+        int nextdot = *i+response[*i];
+        for(*i;(*i)<=nextdot;(*i)++){
+            printf("%c",response[*i]);
+        }
+        printf(".");
+    }
+    (*i)++;
+    int qtype = response[*i]*256 + response[*i+1];
+    (*i)+=2;
+    int qclass = response[*i]*256 + response[*i+1];
+    (*i)+=2;       //kurzor je na prvom znaku za otazkov
+
+    switch (qtype)
+    {
+    case 1:
+        printf(",A");
+        break;
+    case 28:
+        printf(",AAAA");
+        break;
+    case 5:
+        printf(",CNAME");
+        break;
+    case 12:
+        printf(",PTR");
+        break;
+    default:
+        printf("%d", qtype);
+        break;
+    }
+
+    switch (qclass)
+    {
+    case 1:
+        printf(",IN");
+        break;
+    default:
+        printf(",%d", qclass);
+        break;
+    }
+}
+
 void print_dns_response(int ID, unsigned char *response){
     //kontrola ci prijate id je rovnake ako odoslane
     if(ID != response[0]*256 + response[1]){
@@ -127,49 +171,13 @@ void print_dns_response(int ID, unsigned char *response){
     //vypisanie question sekcie
     printf("\n Question section (%d) \n ", qdcount);
     int i = 12;
-    while(response[i] != 0){
-        int nextdot = i+response[i];
-        for(i;i<=nextdot;i++){
-            printf("%c",response[i]);
-        }
-        printf(".");
-    }
-    i++;
-    int qtype = response[i]*256 + response[i+1];
-    i+=2;
-    int qclass = response[i]*256 + response[i+1];
-
-    switch (qtype)
-    {
-    case 1:
-        printf(",A");
-        break;
-    case 28:
-        printf(",AAAA");
-        break;
-    case 5:
-        printf(",CNAME");
-        break;
-    case 12:
-        printf(",PTR");
-        break;
-    default:
-        printf("%d", qtype);
-        break;
-    }
-
-    switch (qclass)
-    {
-    case 1:
-        printf(",IN");
-        break;
-    default:
-        printf(",%d", qclass);
-        break;
-    }
-
-    //vypisanie answer sekcie
+    printquestion(&i, response);
     
+    //vypisanie answer sekcie
+    printf("\n Answer section (%d) \n ", ancount);
+    printf(":%d:", response[i]);        //vypise 1100 0000 0000 1100 - pouziva sa skracovanie - 1100 znamena offset 12, co je adresa ktora bola v question section
+    
+    //printquestion(&i, response);
 }
 
 int get_socket_udp(){
