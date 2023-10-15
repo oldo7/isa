@@ -6,21 +6,47 @@
 #include <unistd.h>
 #include <signal.h>
 
-//vymazat
-void print_udp_response(char* response){
-    if(response[1] == 0){
-        printf("OK:");
-    }else if(response[1] == 1){
-        printf("ERR:");
-    }else{
-        fprintf(stderr,"Prijaty neznamy status code");
-    }
-    for(int i = 3;i<response[2]+3;i++){
-        printf("%c",response[i]);
-    }
-    printf("\n");
+//funkcia ktora ako parametre vezme pole header a hodnoty jednotlivych flagov, a pole naplni spravnymi hodnotami hlavicky. vrati naplnenu hlavicku.
+void make_header(char *header){
+    header[0] = 0xdb;
+    header[1] = 0x42;
+    header[2] = 0x01;
+    header[3] = 0x00;
+    header[4] = 0x00;
+    header[5] = 0x01;
+    header[6] = 0x00;
+    header[7] = 0x00;
+    header[8] = 0x00;
+    header[9] = 0x00;
+    header[10] = 0x00;
+    header[11] = 0x00;
+    header[12] = 0x03;
+    header[13] = 0x77;
+    header[14] = 0x77;
+    header[15] = 0x77;
+    header[16] = 0x0c;
+    header[17] = 0x6e;
+    header[18] = 0x6f;
+    header[19] = 0x72;
+    header[20] = 0x74;
+    header[21] = 0x68;
+    header[22] = 0x65;
+    header[23] = 0x61;
+    header[24] = 0x73;
+    header[25] = 0x74;
+    header[26] = 0x65;
+    header[27] = 0x72;
+    header[28] = 0x6e;
+    header[29] = 0x03;
+    header[30] = 0x65;
+    header[31] = 0x64;
+    header[32] = 0x75;
+    header[33] = 0x00;
+    header[34] = 0x00;
+    header[35] = 0x01;
+    header[36] = 0x00;
+    header[37] = 0x01;
 }
-//vymazat
 
 int get_socket_udp(){
     int family = AF_INET;
@@ -69,7 +95,7 @@ int main(int argc, char *argv[]){
                 exit(EXIT_FAILURE);
             }
             i++;
-            dotaddr = argv[i];
+            host = argv[i];
         }
         else if(!strcmp(argv[i], "-p") && flagp == 0){
             flagp = 1;
@@ -82,7 +108,7 @@ int main(int argc, char *argv[]){
         }
         else if(flaga == 0){
             flaga = 1;
-            host = argv[i];
+            dotaddr = argv[i];
         }
         else{
             fprintf(stderr, "Nespravne zadane argumenty");
@@ -100,40 +126,33 @@ int main(int argc, char *argv[]){
         exit(EXIT_FAILURE);
     }
 
-    //printf("flagr: %d \n flagx: %d \n flag6: %d \n server: %s \n port: %d \n adresa: %s \n", flagr, flagx, flag6, ser, port, addr);
+    printf("flagr: %d \n flagx: %d \n flag6: %d \n server na ktory sa dotaz posiela: %s \n port: %d \n dotazovana adresa: %s \n", flagr, flagx, flag6, host, port, dotaddr);
 
     struct sockaddr_in server_address = get_adress(host, port);
     struct sockaddr *addr = (struct sockaddr *) &server_address;
 
-    //upravit tak aby odoslany UDP packet bol DNS dotaz, ziadny while cyklus tam nebude
     size_t len = 0;
     int client_socket = get_socket_udp();
-        while(1){
-            //ziska uzivatelsky vstup a posle ho
-            char *input = NULL;
-            getline(&input, &len, stdin);
-            int flags = 0;
-            char dest[strlen(input)+2];
-            dest[0]= 'x';
-            dest[1]= strlen(input);
-            dest[2]= '\0';
-            strcat(dest,input);
-            dest[0]= '\0';
-            
-            int bytes_tx = sendto(client_socket, dest, strlen(input)+2,flags, addr, sizeof(server_address));
-            if (bytes_tx < 0){
-                perror("ERROR: sendto");
-            }
-            free(input);
-            
-            //ziska odpoved a vytiskne ju
-            socklen_t address_size = sizeof(server_address);
-            char response[4000] = "";
-            int bytes_rx = recvfrom(client_socket, response, 4000,flags, addr, &address_size);
-            if (bytes_rx < 0){
-                perror("ERROR: recvfrom");
-            }
-            print_udp_response(response);
-        }
-    //upravit tak aby odoslany UDP packet bol DNS dotaz
+
+    //vytvorit header
+    char header[38]; //header ma pevnu dlzku 12 bytov
+    make_header(header);
+    
+    int bytes_tx = sendto(client_socket, header, 38,0 , addr, sizeof(server_address));
+    if (bytes_tx < 0){
+        perror("ERROR: sendto");
+    }
+    
+    //ziska odpoved a vytiskne ju
+    socklen_t address_size = sizeof(server_address);
+    char response[65000] = "";
+    int bytes_rx = recvfrom(client_socket, response, 65000,0, addr, &address_size);
+    if (bytes_rx < 0){
+       perror("ERROR: recvfrom");
+    }
+    
+    //vymazat
+    for(int i = 0; i< 50; i++){
+        printf("char %u : %u \n",i, response[i]);
+    }
 }
