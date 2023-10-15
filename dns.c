@@ -104,9 +104,72 @@ void print_dns_response(int ID, unsigned char *response){
         break;
     }
     // printf(" aa = %x \n tc = %x \n rd = %x \n ra = %x \n rcode = %x \n qdcount = %d \n ancount = %d \n nscount = %d \n arcount = %d \n ", aa, tc, rd, ra, rcode, qdcount, ancount, nscount, arcount);
+    
+    //vypisanie statistik:
+    if(aa){
+        printf("Authoritative: Yes, ");
+    }else{
+        printf("Authoritative: No, ");
+    }
 
-    //vypisanie jednotlivych sekcii
+    if(rd && ra){
+        printf("Recursive: Yes, ");
+    }else{
+        printf("Recursive: No, ");
+    }
 
+    if(tc){
+        printf("Truncated: Yes ");
+    }else{
+        printf("Truncated: No ");
+    }
+
+    //vypisanie question sekcie
+    printf("\n Question section (%d) \n ", qdcount);
+    int i = 12;
+    while(response[i] != 0){
+        int nextdot = i+response[i];
+        for(i;i<=nextdot;i++){
+            printf("%c",response[i]);
+        }
+        printf(".");
+    }
+    i++;
+    int qtype = response[i]*256 + response[i+1];
+    i+=2;
+    int qclass = response[i]*256 + response[i+1];
+
+    switch (qtype)
+    {
+    case 1:
+        printf(",A");
+        break;
+    case 28:
+        printf(",AAAA");
+        break;
+    case 5:
+        printf(",CNAME");
+        break;
+    case 12:
+        printf(",PTR");
+        break;
+    default:
+        printf("%d", qtype);
+        break;
+    }
+
+    switch (qclass)
+    {
+    case 1:
+        printf(",IN");
+        break;
+    default:
+        printf(",%d", qclass);
+        break;
+    }
+
+    //vypisanie answer sekcie
+    
 }
 
 int get_socket_udp(){
