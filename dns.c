@@ -53,15 +53,33 @@ int make_header(unsigned char *header){
     return header[0]*256 + header[1]; //vrati hodnotu ID na neskorsiu kontrolu
 }
 
-void printquestion(int* i, unsigned char* response){
-    while(response[*i] != 0){
-        int nextdot = *i+response[*i];
-        for(*i;(*i)<=nextdot;(*i)++){
-            printf("%c",response[*i]);
-        }
-        printf(".");
+//funkcia vytiskne polia NAME, TYPE a CLASS
+void printquestion(int* i, unsigned char* response, int onlyname){
+    int skipname = 0;                        //flag pre urcenie, ci uz NAME bolo precitane
+    if((response[*i] & 0xc0) == 0xc0){       //ak prve dva bity su jednotky, jedna sa o skomprimovanu adresu (odkaz na predosly vyskyt adresy)
+        int tempi = *i;
+        tempi = (response[tempi] & 0x3f) * 256 + response[tempi+1];             //hodnota offsetu na ktorom sa nachadza odkazovany nazov
+        printquestion(&tempi, response, 1);                                        //vola sa funkcia printquestion s ukazatelom na danom offsete
+        *i += 2;                            //ukazatel sa inkrementuje o hodnotu odkazu (2 byte)
+        skipname = 1;
     }
-    (*i)++;
+    //TODO: odkaz moze byt aj uprostred linku
+    if(skipname==0){
+        while(response[*i] != 0){
+            int nextdot = *i+response[*i];
+            for(*i;(*i)<=nextdot;(*i)++){
+                printf("%c",response[*i]);
+            }
+            printf(".");
+        }
+        (*i)++;
+    }
+    
+
+    if(onlyname == 1){
+        return;
+    }
+
     int qtype = response[*i]*256 + response[*i+1];
     (*i)+=2;
     int qclass = response[*i]*256 + response[*i+1];
@@ -171,13 +189,18 @@ void print_dns_response(int ID, unsigned char *response){
     //vypisanie question sekcie
     printf("\n Question section (%d) \n ", qdcount);
     int i = 12;
-    printquestion(&i, response);
+    printquestion(&i, response, 0);
     
     //vypisanie answer sekcie
     printf("\n Answer section (%d) \n ", ancount);
-    printf(":%d:", response[i]);        //vypise 1100 0000 0000 1100 - pouziva sa skracovanie - 1100 znamena offset 12, co je adresa ktora bola v question section
-    
-    //printquestion(&i, response);
+    printquestion(&i, response, 0);
+
+    //vymazat
+    for(i;i<50;i++){
+        printf("\n %d : %x", i , response[i]);
+    }
+    //vymazat
+    //momentalne sme s i na prvom TTL byte, spravit vypis TTL a rdata, potom nejako fornut toto cele aby sa to opakovalo (ancount) krat
 }
 
 int get_socket_udp(){
