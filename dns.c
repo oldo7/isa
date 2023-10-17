@@ -64,7 +64,7 @@ int printquestion(int* i, unsigned char* response, int onlyname){
         *i += 2;                            //ukazatel sa inkrementuje o velkost odkazu (2 byte)
         skipname = 1;
     }
-    
+
     if(skipname==0){
         while(response[*i] != 0){
             if(response[*i] == 0xc0){
@@ -201,16 +201,6 @@ void print_dns_response(int ID, unsigned char *response){
     //vypisanie answer sekcie
     printf("\n Answer section (%d) \n ", ancount);
     for(int j = 0; j < ancount; j++){
-
-        //debug
-        // if(j == 2){
-        //     for(int lolec = 0; lolec < 15; lolec++){
-        //         printf(":%d = %x:\n", i, response[i]);
-        //         i++;
-        //     }
-        //     break;
-        // }
-
         int qtype = printquestion(&i, response, 0);         //vypis name, type a class
         int TTL = (response[i] << 24) + (response[i+1] << 16) + (response[i+2] << 8) + (response[i+3]);     //vypis ttl
         printf(",%d,", TTL);
