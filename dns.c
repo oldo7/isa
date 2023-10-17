@@ -9,6 +9,7 @@
 
 #define MAX_RESPONSE 512
 
+//TODO: hlavicka
 //funkcia ktora ako parametre vezme pole header a hodnoty jednotlivych flagov, a pole naplni spravnymi hodnotami hlavicky. vrati naplnenu hlavicku.
 int make_header(unsigned char *header){
     header[0] = rand()%256;
@@ -53,8 +54,8 @@ int make_header(unsigned char *header){
     return header[0]*256 + header[1]; //vrati hodnotu ID na neskorsiu kontrolu
 }
 
-//funkcia vytiskne polia NAME, TYPE a CLASS
-void printquestion(int* i, unsigned char* response, int onlyname){
+//funkcia vytiskne polia NAME, TYPE a CLASS. vracia type.
+int printquestion(int* i, unsigned char* response, int onlyname){
     int skipname = 0;                        //flag pre urcenie, ci uz NAME bolo precitane
     if((response[*i] & 0xc0) == 0xc0){       //ak prve dva bity su jednotky, jedna sa o skomprimovanu adresu (odkaz na predosly vyskyt adresy)
         int tempi = *i;
@@ -77,7 +78,7 @@ void printquestion(int* i, unsigned char* response, int onlyname){
     
 
     if(onlyname == 1){
-        return;
+        return -1;
     }
 
     int qtype = response[*i]*256 + response[*i+1];
@@ -113,6 +114,7 @@ void printquestion(int* i, unsigned char* response, int onlyname){
         printf(",%d", qclass);
         break;
     }
+    return qtype;
 }
 
 void print_dns_response(int ID, unsigned char *response){
@@ -193,14 +195,29 @@ void print_dns_response(int ID, unsigned char *response){
     
     //vypisanie answer sekcie
     printf("\n Answer section (%d) \n ", ancount);
-    printquestion(&i, response, 0);
+    for(int j = 0; j < ancount; j++){
+        int qtype = printquestion(&i, response, 0);         //vypis name, type a class
+        int TTL = (response[i] << 24) + (response[i+1] << 16) + (response[i+2] << 8) + (response[i+3]);     //vypis ttl
+        printf(",%d,", TTL);
+        i+=4;
+        int rdlength = (response[i] << 8) + response[i+1];
+        i+=2;
 
-    //vymazat
-    for(i;i<50;i++){
-        printf("\n %d : %x", i , response[i]);
+        switch (qtype)                      //data sa vypisuju podla toho, o aky typ zaznamu ide
+        {
+        case 5:
+            printquestion(&i, response, 1);             //ak je zaznam CNAME, pouzije sa funkcia printquestion na vypisanie nazvu
+            break;
+        case 1:
+            printf("%d.%d.%d.%d", response[i], response[i+1], response[i+2], response[i+3]);        //ak je zaznam A, vypise sa IP adresa
+            i += 4;
+            break;
+        default:
+            break;
+        }
+        printf("\n");
     }
-    //vymazat
-    //momentalne sme s i na prvom TTL byte, spravit vypis TTL a rdata, potom nejako fornut toto cele aby sa to opakovalo (ancount) krat
+
 }
 
 int get_socket_udp(){
