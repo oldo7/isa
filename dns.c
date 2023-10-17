@@ -61,12 +61,17 @@ int printquestion(int* i, unsigned char* response, int onlyname){
         int tempi = *i;
         tempi = (response[tempi] & 0x3f) * 256 + response[tempi+1];             //hodnota offsetu na ktorom sa nachadza odkazovany nazov
         printquestion(&tempi, response, 1);                                        //vola sa funkcia printquestion s ukazatelom na danom offsete
-        *i += 2;                            //ukazatel sa inkrementuje o hodnotu odkazu (2 byte)
+        *i += 2;                            //ukazatel sa inkrementuje o velkost odkazu (2 byte)
         skipname = 1;
     }
-    //TODO: odkaz moze byt aj uprostred linku
+    
     if(skipname==0){
         while(response[*i] != 0){
+            if(response[*i] == 0xc0){
+                printquestion(i, response, onlyname);          //ak jedna z "bodiek" (labelov) je 0xc0, jedna sa o skomprimovany nazov. zvysok nazvu sa dopise opatovnym zavolanim tejto funkcie.
+                (*i)--;   //algoritmus obsluhy skrateneho mena automaticky inkrementuje ukazatel i o velkost odkazu (2 byte). sucastou cyklu vypisania mena je vsak inkrementacia ukazatela i na konci. teda by sme boli o jeden znak vpred.
+                break;
+            }
             int nextdot = *i+response[*i];
             for(*i;(*i)<=nextdot;(*i)++){
                 printf("%c",response[*i]);
@@ -196,6 +201,16 @@ void print_dns_response(int ID, unsigned char *response){
     //vypisanie answer sekcie
     printf("\n Answer section (%d) \n ", ancount);
     for(int j = 0; j < ancount; j++){
+
+        //debug
+        // if(j == 2){
+        //     for(int lolec = 0; lolec < 15; lolec++){
+        //         printf(":%d = %x:\n", i, response[i]);
+        //         i++;
+        //     }
+        //     break;
+        // }
+
         int qtype = printquestion(&i, response, 0);         //vypis name, type a class
         int TTL = (response[i] << 24) + (response[i+1] << 16) + (response[i+2] << 8) + (response[i+3]);     //vypis ttl
         printf(",%d,", TTL);
@@ -203,6 +218,7 @@ void print_dns_response(int ID, unsigned char *response){
         int rdlength = (response[i] << 8) + response[i+1];
         i+=2;
 
+        //todo: do switchu pridat ostatne typy, tie co nepodporujeme skipnut podla ich velkosti
         switch (qtype)                      //data sa vypisuju podla toho, o aky typ zaznamu ide
         {
         case 5:
