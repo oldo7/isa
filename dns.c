@@ -9,9 +9,62 @@
 
 #define MAX_RESPONSE 512
 
-//TODO: hlavicka
 //funkcia ktora ako parametre vezme pole header a hodnoty jednotlivych flagov, a pole naplni spravnymi hodnotami hlavicky. vrati naplnenu hlavicku.
-int make_header(unsigned char *header){
+int make_header(unsigned char *header, int rd){
+    header[0] = rand()%256;
+    header[1] = rand()%256;
+    if(rd){                         //recursion desired bit
+        header[2] = 0x01;
+    }else{
+        header[2] = 0x00;
+    }
+    header[3] = 0x00;
+
+    header[4] = 0x00;
+    header[5] = 0x01;           //qdcount
+
+    header[6] = 0x00;
+    header[7] = 0x00;           //ancount
+
+    header[8] = 0x00;
+    header[9] = 0x00;           //nscount
+
+    header[10] = 0x00;
+    header[11] = 0x00;          //arcount
+
+    return header[0]*256 + header[1]; //vrati hodnotu ID na neskorsiu kontrolu
+}
+
+void make_body(unsigned char *body, unsigned char *dotaddr, int qtype){
+    int i = 0;
+    int j = 0;
+    //TODO: ostatne typy request (AAAA a reverse)
+    switch (qtype)
+    {
+    case 1:                     // A
+        while(dotaddr[j] != '\0'){
+            j = i;
+            while(dotaddr[j] != '.' && dotaddr[j] != '\0'){           //zisti index najblizsej bodky
+                j++;
+            }
+            int numofchars = j-i;                           //pocet nasledujucich znakov
+            body[i] = numofchars;                           //prvy byte labelu je pocet znakov ktore nasleduju
+            i++;
+            for(int k = 0; k<numofchars; k++){              //vlozi dane znaky do retazca
+                body[i] = dotaddr[i-1];
+                i++;
+            }
+        }
+        body[i] = '\0';
+        return;
+    
+    default:
+        break;
+    }
+}
+
+//delete
+int make_headern(unsigned char *header){
     header[0] = rand()%256;
     header[1] = rand()%256;
     header[2] = 0x01;
@@ -53,6 +106,7 @@ int make_header(unsigned char *header){
 
     return header[0]*256 + header[1]; //vrati hodnotu ID na neskorsiu kontrolu
 }
+//delete
 
 //funkcia vytiskne polia NAME, TYPE a CLASS. vracia type.
 int printquestion(int* i, unsigned char* response, int onlyname){
@@ -224,6 +278,8 @@ void print_dns_response(int ID, unsigned char *response){
         printf("\n");
     }
 
+    //TODO: authority a additional sekcie
+
 }
 
 int get_socket_udp(){
@@ -298,6 +354,17 @@ int main(int argc, char *argv[]){
         exit(EXIT_FAILURE);
     }
 
+    if(flagx == 1 && flag6 == 1){
+        fprintf(stderr, "Kombinacia parametrov -6 a -x nieje povolena");
+        exit(EXIT_FAILURE);
+    }
+    int qtype = 1;             //qtype dotazu. default: 1 (A)
+    if(flag6){
+        qtype = 28;             // AAAA
+    }else if(flagx){
+        qtype = 12;             // PTR
+    }
+
     //kontrola formatu parametrov
     if(port == 0 || port > 65535){
         fprintf(stderr, "Nespravne zadane argumenty: nevalidne cislo portu");
@@ -312,11 +379,15 @@ int main(int argc, char *argv[]){
 
     int client_socket = get_socket_udp();
 
-    //vytvorit header
-    char header[38]; //header ma pevnu dlzku 12 bytov
-    int ID = make_header(header);
-    //make_body
-    //join header and body
+    //vytvori header
+    char header[12]; //header ma pevnu dlzku 12 bytov
+    int ID = make_header(header, flagr);
+    //vytvori body
+    char body[strlen(dotaddr) + 2];         //velkost tela je strlen (kazda bodka bude nahradena bytom velkosti dalsieho labelu) + 2 (zaciatocny byte labelu a \0 na konci)
+    make_body(body, dotaddr, qtype);
+    
+    //TODO MAIN: mame header a body, spojit ich a odoslat to
+
 
     //odosle vytvoreny DNS dotaz
     int bytes_tx = sendto(client_socket, header, 38,0 , addr, sizeof(server_address));
