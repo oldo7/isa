@@ -41,6 +41,7 @@ void make_body(unsigned char *body, unsigned char *dotaddr, int qtype){
     //TODO: ostatne typy request (AAAA a reverse)
     switch (qtype)
     {
+    case 28:                    //AAAA
     case 1:                     // A
         while(dotaddr[j] != '\0'){
             j = i;
@@ -58,12 +59,12 @@ void make_body(unsigned char *body, unsigned char *dotaddr, int qtype){
         body[i] = '\0';                                     //byte na konci sekvencii labelov
 
         body[i+1] = 0;
-        body[i+2] = 1;                                      //QTYPE = 1 (A)
-        
+        body[i+2] = qtype;                                  //QTYPE
+
         body[i+3] = 0;
         body[i+4] = 1;                                      //QCLASS = 1 (Internet address)
         return;
-    
+
     default:
         break;
     }
@@ -246,6 +247,13 @@ void print_dns_response(int ID, unsigned char *response){
             printf("%d.%d.%d.%d", response[i], response[i+1], response[i+2], response[i+3]);        //ak je zaznam A, vypise sa IP adresa
             i += 4;
             break;
+        case 28:
+            for(int k = 0; k<7;k++){
+                printf("%x:",(response[i] << 8) + response[i+1]);
+                i+=2;
+            }
+            printf("%x:",(response[i] << 8) + response[i+1]);
+            i+=2;
         default:
             break;
         }
