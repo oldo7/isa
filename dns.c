@@ -10,6 +10,18 @@
 #define MAX_RESPONSE 512
 //TODO: ipv6 adresy (only reverse asi ale mozno aj vypis (aj ked vypis by bol AAAA ne?(jj)))
 //funkcia ktora ako parametre vezme pole header a hodnoty jednotlivych flagov, a pole naplni spravnymi hodnotami hlavicky. vrati naplnenu hlavicku.
+void concat(char *result, char *string1, char *string2, int s1length, int s2length){
+    int i = 0;
+    for(i; i<s1length; i++){
+        result[i] = string1[i];
+    }
+    while(i<s2length + s1length){
+        result[i] = string2[i-s1length];
+        i++;
+    }
+    return;
+}
+
 int make_header(unsigned char *header, int rd){
     header[0] = rand()%256;
     header[1] = rand()%256;
@@ -64,7 +76,34 @@ void make_body(unsigned char *body, unsigned char *dotaddr, int qtype){
         body[i+3] = 0;
         body[i+4] = 1;                                      //QCLASS = 1 (Internet address)
         return;
+    case 12:
+        j = strlen(dotaddr)-1;
+        while(j >= 0){                                      //spravne doplni pocet znakov do labelov a vymeni poradie jednotlivych oktetov v ip adrese
+            int temp = j;
+            while(dotaddr[j] != '.' && j>= 0){
+                j--;
+            }
+            int numofchars = temp - j;
+            temp = j;
+            j++;
+            body[i] = numofchars;
+            i++;
+            for(int l = 0; l < numofchars; l++){
+                body[i] = dotaddr[j];
+                j++;
+                i++; 
+            }
+            j = temp - 1;
+        }   
 
+        concat(body, body, "\x07in-addr\x04\x61rpa\0",i,14);
+        i+=13;
+
+        body[i+1] = 0;
+        body[i+2] = qtype;                                  //QTYPE
+
+        body[i+3] = 0;
+        body[i+4] = 1;                                      //QCLASS = 1 (Internet address)
     default:
         break;
     }
@@ -365,14 +404,23 @@ int main(int argc, char *argv[]){
     unsigned char header[12]; //header ma pevnu dlzku 12 bytov
     int ID = make_header(header, flagr);
     //vytvori body
-    unsigned char body[strlen(dotaddr) + 6];         //velkost tela je strlen (kazda bodka bude nahradena bytom velkosti dalsieho labelu) + 2 (zaciatocny byte labelu a \0 na konci) + QTYPE (2) a QCLASS (2)
+    int bodysize = strlen(dotaddr) + 6;             //velkost tela je strlen (kazda bodka bude nahradena bytom velkosti dalsieho labelu) + 2 (zaciatocny byte labelu a \0 na konci) + QTYPE (2) a QCLASS (2)
+    if(qtype == 12){
+        bodysize += 13;                             //velkost tela pri reverznom dotaze je vacsia o konstantny vyraz .in-addr.arpa ktory sa konkatenuje na koniec
+    }
+    unsigned char body[bodysize];
     make_body(body, dotaddr, qtype);
     
     //TODO MAIN: mame header a body, spojit ich a odoslat to
-    int qlength = 12 + strlen(dotaddr) + 6;
+    int qlength = 12 + bodysize;
     unsigned char query[qlength];
     make_query(query, header, body, qlength);
 
+    //debug
+    //for(int lel = 0; lel<qlength; lel++){
+    //    printf(":%x:\n", query[lel]);
+    //}
+    //debug
 
     //odosle vytvoreny DNS dotaz
     int bytes_tx = sendto(client_socket, query, qlength,0 , addr, sizeof(server_address));
