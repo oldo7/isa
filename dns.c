@@ -55,7 +55,13 @@ void make_body(unsigned char *body, unsigned char *dotaddr, int qtype){
                 i++;
             }
         }
-        body[i] = '\0';
+        body[i] = '\0';                                     //byte na konci sekvencii labelov
+
+        body[i+1] = 0;
+        body[i+2] = 1;                                      //QTYPE = 1 (A)
+        
+        body[i+3] = 0;
+        body[i+4] = 1;                                      //QCLASS = 1 (Internet address)
         return;
     
     default:
@@ -63,50 +69,18 @@ void make_body(unsigned char *body, unsigned char *dotaddr, int qtype){
     }
 }
 
-//delete
-int make_headern(unsigned char *header){
-    header[0] = rand()%256;
-    header[1] = rand()%256;
-    header[2] = 0x01;
-    header[3] = 0x00;
-    header[4] = 0x00;
-    header[5] = 0x01;
-    header[6] = 0x00;
-    header[7] = 0x00;
-    header[8] = 0x00;
-    header[9] = 0x00;
-    header[10] = 0x00;
-    header[11] = 0x00;
-    header[12] = 0x03;
-    header[13] = 0x77;
-    header[14] = 0x77;
-    header[15] = 0x77;
-    header[16] = 0x0c;
-    header[17] = 0x6e;
-    header[18] = 0x6f;
-    header[19] = 0x72;
-    header[20] = 0x74;
-    header[21] = 0x68;
-    header[22] = 0x65;
-    header[23] = 0x61;
-    header[24] = 0x73;
-    header[25] = 0x74;
-    header[26] = 0x65;
-    header[27] = 0x72;
-    header[28] = 0x6e;
-    header[29] = 0x03;
-    header[30] = 0x65;
-    header[31] = 0x64;
-    header[32] = 0x75;
-    header[33] = 0x00;
-    header[34] = 0x00;
-    header[35] = 0x01;
-    header[36] = 0x00;
-    header[37] = 0x01;
-
-    return header[0]*256 + header[1]; //vrati hodnotu ID na neskorsiu kontrolu
+//naplni retazec query z retazcov header a body
+void make_query(unsigned char *query, unsigned char *header, unsigned char *body, int qlength){
+    int i = 0;
+    for(i; i<12; i++){
+        query[i] = header[i];
+    }
+    while(i<qlength){
+        query[i] = body[i-12];
+        i++;
+    }
+    return;
 }
-//delete
 
 //funkcia vytiskne polia NAME, TYPE a CLASS. vracia type.
 int printquestion(int* i, unsigned char* response, int onlyname){
@@ -380,17 +354,20 @@ int main(int argc, char *argv[]){
     int client_socket = get_socket_udp();
 
     //vytvori header
-    char header[12]; //header ma pevnu dlzku 12 bytov
+    unsigned char header[12]; //header ma pevnu dlzku 12 bytov
     int ID = make_header(header, flagr);
     //vytvori body
-    char body[strlen(dotaddr) + 2];         //velkost tela je strlen (kazda bodka bude nahradena bytom velkosti dalsieho labelu) + 2 (zaciatocny byte labelu a \0 na konci)
+    unsigned char body[strlen(dotaddr) + 6];         //velkost tela je strlen (kazda bodka bude nahradena bytom velkosti dalsieho labelu) + 2 (zaciatocny byte labelu a \0 na konci) + QTYPE (2) a QCLASS (2)
     make_body(body, dotaddr, qtype);
     
     //TODO MAIN: mame header a body, spojit ich a odoslat to
+    int qlength = 12 + strlen(dotaddr) + 6;
+    unsigned char query[qlength];
+    make_query(query, header, body, qlength);
 
 
     //odosle vytvoreny DNS dotaz
-    int bytes_tx = sendto(client_socket, header, 38,0 , addr, sizeof(server_address));
+    int bytes_tx = sendto(client_socket, query, qlength,0 , addr, sizeof(server_address));
     if (bytes_tx < 0){
         perror("ERROR: sendto");
     }
