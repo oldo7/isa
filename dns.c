@@ -411,7 +411,7 @@ int main(int argc, char *argv[]){
     unsigned char body[bodysize];
     make_body(body, dotaddr, qtype);
     
-    //TODO MAIN: mame header a body, spojit ich a odoslat to
+    //TODO MAIN: mame header a body, spojit pomocou funkcie concat
     int qlength = 12 + bodysize;
     unsigned char query[qlength];
     make_query(query, header, body, qlength);
