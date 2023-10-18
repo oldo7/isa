@@ -8,7 +8,7 @@
 #include <time.h>
 
 #define MAX_RESPONSE 512
-
+//TODO: ipv6 adresy (only reverse asi ale mozno aj vypis (aj ked vypis by bol AAAA ne?(jj)))
 //funkcia ktora ako parametre vezme pole header a hodnoty jednotlivych flagov, a pole naplni spravnymi hodnotami hlavicky. vrati naplnenu hlavicku.
 int make_header(unsigned char *header, int rd){
     header[0] = rand()%256;
