@@ -106,16 +106,23 @@ void make_body(unsigned char *body, unsigned char *dotaddr, int qtype){
         break;
     case 1001:                                              //PTR(ipv6)
         qtype = 12;
-        int zeros = -2;
-        int zeroscount = 0;                      //kolko stvoric nul je medzi ::
-        for(int z = 0; z++; z<strlen(dotaddr)){
+        int zeros = -5;
+        int coloncount = 0;                      //kolko : je v adrese (okrem ::)
+        int zeroscount = 0;                     //pocet nul medzi ::
+        for(int z = 0; z<strlen(dotaddr); z++){
             if(dotaddr[z] == ':'){
                 if(dotaddr[z+1] == ':'){
                     zeros = z;
+                    z+=2;
                 }else{
-                    zeroscount++;
+                    coloncount++;
                 }   
             }
+        }
+        if(zeros == 0 || zeros ==strlen(dotaddr) - 2){              //ak je :: na zaciatku alebo na konci
+            zeroscount = 8-(coloncount+1);
+        }else{
+            zeroscount = 8-(coloncount+2);
         }
 
         j = strlen(dotaddr) - 1;
@@ -125,8 +132,16 @@ void make_body(unsigned char *body, unsigned char *dotaddr, int qtype){
                 j--;
             }
             int numofchars = temp-j;
-            if(j == zeros+1){                           //narazili sme na pravu stranu ::
-                printf("lol");                          //ideme od zac
+            if(j == zeros){                           //narazili sme na lavu stranu ::
+                for(int z = 0; z<zeroscount; z++){      //pre kazdy zeroscount sa pridaju 4 nuly (aj s ich repektivnymi labelami)
+                    for(int a = 0; a<4; a++){
+                        body[2*i] = 1;
+                        body[2*i + 1] = '0';
+                        i++;
+                    }
+                }
+                j--;
+                continue;
             }
             for(int z=0; z<4; z++){                         //naplni 4 policka
                 if(numofchars>0){
@@ -490,9 +505,9 @@ int main(int argc, char *argv[]){
     concat(query, header, body, 12, bodysize);
 
     //debug
-    for(int lel = 12; lel<qlength; lel++){
-       printf(":%x:\n", query[lel]);
-    }
+    // for(int lel = 12; lel<qlength; lel++){
+    //    printf(":%x:  ", query[lel]);
+    // }
     //debug
 
     //odosle vytvoreny DNS dotaz
