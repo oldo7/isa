@@ -8,7 +8,7 @@
 #include <time.h>
 
 #define MAX_RESPONSE 512
-//TODO: ipv6 adresy (only reverse asi ale mozno aj vypis (aj ked vypis by bol AAAA ne?(jj)))
+//TODO: ipv6 adresy na vstupe
 
 void concat(char *result, char *string1, char *string2, int s1length, int s2length){
     int i = 0;
@@ -50,7 +50,6 @@ int make_header(unsigned char *header, int rd){
 void make_body(unsigned char *body, unsigned char *dotaddr, int qtype){
     int i = 0;
     int j = 0;
-    //TODO: ostatne typy request (AAAA a reverse)
     switch (qtype)
     {
     case 28:                    //AAAA
@@ -76,7 +75,7 @@ void make_body(unsigned char *body, unsigned char *dotaddr, int qtype){
         body[i+3] = 0;
         body[i+4] = 1;                                      //QCLASS = 1 (Internet address)
         return;
-    case 12:
+    case 12:                    //PTR
         j = strlen(dotaddr)-1;
         while(j >= 0){                                      //spravne doplni pocet znakov do labelov a vymeni poradie jednotlivych oktetov v ip adrese
             int temp = j;
@@ -96,7 +95,7 @@ void make_body(unsigned char *body, unsigned char *dotaddr, int qtype){
             j = temp - 1;
         }   
 
-        concat(body, body, "\x07in-addr\x04\x61rpa\0",i,14);
+        concat(body, body, "\x07in-addr\x04\x61rpa\0",i,14);        //za ip adresu vlozi staticky retazec
         i+=13;
 
         body[i+1] = 0;
@@ -159,6 +158,9 @@ int printquestion(int* i, unsigned char* response, int onlyname){
         break;
     case 12:
         printf(",PTR");
+        break;
+    case 2:
+        printf(",NS");
         break;
     default:
         printf("%d", qtype);
@@ -253,80 +255,53 @@ void print_dns_response(int ID, unsigned char *response){
     int i = 12;
     printquestion(&i, response, 0);
     
-    //vypisanie answer sekcie
-    printf("\n Answer section (%d) \n ", ancount);
-    for(int j = 0; j < ancount; j++){
-        int qtype = printquestion(&i, response, 0);         //vypis name, type a class
-        int TTL = (response[i] << 24) + (response[i+1] << 16) + (response[i+2] << 8) + (response[i+3]);     //vypis ttl
-        printf(",%d,", TTL);
-        i+=4;
-        int rdlength = (response[i] << 8) + response[i+1];
-        i+=2;
-
-        //todo: do switchu pridat ostatne typy, tie co nepodporujeme skipnut podla ich velkosti
-        switch (qtype)                      //data sa vypisuju podla toho, o aky typ zaznamu ide
-        {
-        case 5:
-            printquestion(&i, response, 1);             //ak je zaznam CNAME, pouzije sa funkcia printquestion na vypisanie nazvu
-            break;
-        case 1:
-            printf("%d.%d.%d.%d", response[i], response[i+1], response[i+2], response[i+3]);        //ak je zaznam A, vypise sa IP adresa
-            i += 4;
-            break;
-        case 28:                                //AAAA
-            for(int k = 0; k<7;k++){
-                printf("%x:",(response[i] << 8) + response[i+1]);
-                i+=2;
-            }
-            printf("%x",(response[i] << 8) + response[i+1]);
-            i+=2;
-            break;
-        case 12:
-            printquestion(&i, response, 1);             //ak je zaznam PTR, pouzije sa funkcia printquestion na vypisanie nazvu
-            break;
-        default:
-            break;
+    //vypisanie answer, authority a additional sekcii
+    for(int section = 0; section < 3; section++){
+        int numofiterations = 0;                            //pocet poloziek v danej sekcii
+        if(section == 0){
+            printf("\n Answer section (%d) \n ", ancount);
+            numofiterations = ancount;
+        }else if(section == 1){
+            printf("Authority section (%d) \n ", nscount);
+            numofiterations = nscount;
+        }else{
+            printf("Additional section (%d) \n ", arcount);
+            numofiterations = arcount;
         }
-        printf("\n");
-    }
-
-    //vypisanie authority sekcie
-    printf("Authority section (%d) \n ", nscount);
-    for(int j = 0; j < nscount; j++){
-        int qtype = printquestion(&i, response, 0);         //vypis name, type a class
-        int TTL = (response[i] << 24) + (response[i+1] << 16) + (response[i+2] << 8) + (response[i+3]);     //vypis ttl
-        printf(",%d,", TTL);
-        i+=4;
-        int rdlength = (response[i] << 8) + response[i+1];
-        i+=2;
-
-        //todo: do switchu pridat ostatne typy, tie co nepodporujeme skipnut podla ich velkosti
-        switch (qtype)                      //data sa vypisuju podla toho, o aky typ zaznamu ide
-        {
-        case 5:
-            printquestion(&i, response, 1);             //ak je zaznam CNAME, pouzije sa funkcia printquestion na vypisanie nazvu
-            break;
-        case 1:
-            printf("%d.%d.%d.%d", response[i], response[i+1], response[i+2], response[i+3]);        //ak je zaznam A, vypise sa IP adresa
-            i += 4;
-            break;
-        case 28:                                //AAAA
-            for(int k = 0; k<7;k++){
-                printf("%x:",(response[i] << 8) + response[i+1]);
-                i+=2;
-            }
-            printf("%x",(response[i] << 8) + response[i+1]);
+        for(int j = 0; j < numofiterations; j++){               //spracovavanie jednotlivych zaznamov
+            int qtype = printquestion(&i, response, 0);         //vypis name, type a class
+            int TTL = (response[i] << 24) + (response[i+1] << 16) + (response[i+2] << 8) + (response[i+3]);     //vypis ttl
+            printf(",%d,", TTL);
+            i+=4;
+            int rdlength = (response[i] << 8) + response[i+1];
             i+=2;
-            break;
-        case 12:
-            printquestion(&i, response, 1);             //ak je zaznam PTR, pouzije sa funkcia printquestion na vypisanie nazvu
-            break;
-        default:
-            break;
+
+            //todo: do switchu pridat ostatne typy, tie co nepodporujeme skipnut podla ich velkosti (minimalne SOA)
+            switch (qtype)                      //vypis dat: data sa vypisuju podla toho, o aky typ zaznamu ide
+            {
+            case 1:                                 //ak je zaznam A, vypise sa IP adresa
+                printf("%d.%d.%d.%d", response[i], response[i+1], response[i+2], response[i+3]);
+                i += 4;
+                break;
+            case 28:                                //AAAA, vypisa sa ipv6 adresa
+                for(int k = 0; k<7;k++){
+                    printf("%x:",(response[i] << 8) + response[i+1]);
+                    i+=2;
+                }
+                printf("%x",(response[i] << 8) + response[i+1]);
+                i+=2;
+                break;
+            case 12:
+            case 5:
+            case 2:                                 //ak je zaznam PTR, NS, alebo CNAME pouzije sa funkcia printquestion na vypisanie nazvu
+                printquestion(&i, response, 1);
+                break;
+            default:
+                break;
+            }
+            printf("\n");
         }
-        printf("\n");
     }
-    //TODO: authority a additional sekcie
 
 }
 
@@ -438,7 +413,6 @@ int main(int argc, char *argv[]){
     unsigned char body[bodysize];
     make_body(body, dotaddr, qtype);
     
-    //TODO MAIN: mame header a body, spojit pomocou funkcie concat
     int qlength = 12 + bodysize;
     unsigned char query[qlength];
     concat(query, header, body, 12, bodysize);
