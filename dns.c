@@ -8,7 +8,7 @@
 #include <time.h>
 
 #define MAX_RESPONSE 512
-//TODO: ipv6 formatovat na vystupe (teraz to tam vypisuje ako 4.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.4.4.4.4.8.9.5.0.2.0.a.2.ip6.arpa.,PTR,IN)
+//TODO: ipv6 formatovat na vystupe (teraz to tam vypisuje ako 4.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.4.4.4.4.8.9.5.0.2.0.a.2.ip6.arpa.,PTR,IN) - asi netreba
 
 void concat(char *result, char *string1, char *string2, int s1length, int s2length){
     int i = 0;
@@ -235,8 +235,11 @@ int printquestion(int* i, unsigned char* response, int onlyname){
     case 2:
         printf(",NS");
         break;
+    case 6:
+        printf(",SOA");
+        break;
     default:
-        printf("%d", qtype);
+        printf(",%d", qtype);
         break;
     }
 
@@ -348,8 +351,6 @@ void print_dns_response(int ID, unsigned char *response){
             i+=4;
             int rdlength = (response[i] << 8) + response[i+1];
             i+=2;
-
-            //todo: do switchu pridat ostatne typy, tie co nepodporujeme skipnut podla ich velkosti (minimalne SOA)
             switch (qtype)                      //vypis dat: data sa vypisuju podla toho, o aky typ zaznamu ide
             {
             case 1:                                 //ak je zaznam A, vypise sa IP adresa
@@ -370,6 +371,8 @@ void print_dns_response(int ID, unsigned char *response){
                 printquestion(&i, response, 1);
                 break;
             default:
+                printf("[Typ zaznamu nepodporovany]");
+                i+= rdlength;
                 break;
             }
             printf("\n");
