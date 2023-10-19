@@ -103,6 +103,64 @@ void make_body(unsigned char *body, unsigned char *dotaddr, int qtype){
 
         body[i+3] = 0;
         body[i+4] = 1;                                      //QCLASS = 1 (Internet address)
+        break;
+    case 1001:                                              //PTR(ipv6)
+        qtype = 12;
+        int zeros = -2;
+        int zeroscount = 0;                      //kolko stvoric nul je medzi ::
+        for(int z = 0; z++; z<strlen(dotaddr)){
+            if(dotaddr[z] == ':'){
+                if(dotaddr[z+1] == ':'){
+                    zeros = z;
+                }else{
+                    zeroscount++;
+                }   
+            }
+        }
+
+        j = strlen(dotaddr) - 1;
+        while(j >= 0){
+            int temp = j;
+            while(dotaddr[j] != ':' && j>= 0){
+                j--;
+            }
+            int numofchars = temp-j;
+            if(j == zeros+1){                           //narazili sme na pravu stranu ::
+                printf("lol");                          //ideme od zac
+            }
+            for(int z=0; z<4; z++){                         //naplni 4 policka
+                if(numofchars>0){
+                    body[2*i] = 1;
+                    body[2*i + 1] = dotaddr[temp];
+                    temp--;
+                    numofchars--;
+                    i++;
+                }
+                else{
+                    body[2*i] = 1;
+                    body[2*i + 1] = '0';
+                    i++;
+                }
+            }
+            j--;                //j sa posunie z : na dalsiu stvoricu
+            if(j == -1){        //prvym znakom bola : -> treba pridat 4 nuly na koniec
+                for(int z=0; z<4; z++){                         //naplni 4 policka
+                    body[2*i] = 1;
+                    body[2*i + 1] = '0';
+                    i++;
+                }   
+            }
+        }
+        i*=2;
+        concat(body, body, "\x03ip6\x04\x61rpa\0",i,10);
+        i+=9;
+
+        body[i+1] = 0;
+        body[i+2] = qtype;                                  //QTYPE
+
+        body[i+3] = 0;
+        body[i+4] = 1;                                      //QCLASS = 1 (Internet address)
+        break;
     default:
         break;
     }
@@ -408,7 +466,21 @@ int main(int argc, char *argv[]){
     //vytvori body
     int bodysize = strlen(dotaddr) + 6;             //velkost tela je strlen (kazda bodka bude nahradena bytom velkosti dalsieho labelu) + 2 (zaciatocny byte labelu a \0 na konci) + QTYPE (2) a QCLASS (2)
     if(qtype == 12){
-        bodysize += 13;                             //velkost tela pri reverznom dotaze je vacsia o konstantny vyraz .in-addr.arpa ktory sa konkatenuje na koniec
+        for(int i = 0; i<strlen(dotaddr); i++){
+            if(dotaddr[i] == '.'){
+                bodysize += 13;                             //velkost tela pri reverznom ipv4 dotaze je vacsia o konstantny vyraz .in-addr.arpa ktory sa konkatenuje na koniec
+                break;
+            }else if(dotaddr[i] == ':'){
+                bodysize = 78;                             //velkost tela pri reverznom ipv6 ma pevne danu dlzku 78
+                qtype = 1001;                               //interne sa nastavi type 1001, ktory odlisuje PTR ipv4 od ipv6
+                break;
+            }
+            if(i == strlen(dotaddr)){
+                fprintf(stderr, "Nevalidna kombinacia adresy a parametru -x");
+                exit(EXIT_FAILURE);
+            }
+        }
+        
     }
     unsigned char body[bodysize];
     make_body(body, dotaddr, qtype);
@@ -418,9 +490,9 @@ int main(int argc, char *argv[]){
     concat(query, header, body, 12, bodysize);
 
     //debug
-    //for(int lel = 0; lel<qlength; lel++){
-    //    printf(":%x:\n", query[lel]);
-    //}
+    for(int lel = 12; lel<qlength; lel++){
+       printf(":%x:\n", query[lel]);
+    }
     //debug
 
     //odosle vytvoreny DNS dotaz
