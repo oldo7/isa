@@ -8,7 +8,7 @@
 #include <time.h>
 
 #define MAX_RESPONSE 512
-//TODO: ipv6 adresy na vstupe
+//TODO: ipv6 formatovat na vystupe (teraz to tam vypisuje ako 4.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.4.4.4.4.8.9.5.0.2.0.a.2.ip6.arpa.,PTR,IN)
 
 void concat(char *result, char *string1, char *string2, int s1length, int s2length){
     int i = 0;
