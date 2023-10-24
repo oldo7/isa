@@ -1,3 +1,12 @@
 time.h sa pouziva pre vygenerovanie nahodneho cisla ako ID DNS dotazu
 ak sa z odpovede serveru zisti chyba (v sekcii response code), chyba sa vypise na vystup a program konci
 aplikacia podporuje len jednu otazku v sekcii question section (kedze viac otazok nedava pri DNS zmysel)
+odosiela sa presne to co uzivatel zadal bez kontrol
+
+return kody:
+0-vsetko prebehlo v poriadku
+1-DNS dotaz bol odoslany, odpoved bola prijata, ale v odpovedi je nenulovy response code
+1-DNS dotaz bol odoslany, odpoved bola prijata, ale v odpovedi su nevalidne/nezmyselne hodnoty
+2-DNS dotaz bol odoslany, ale nebola prijata ziadna odpoved
+3-chybne zadane parametre
+4-interna chyba aplikacie
