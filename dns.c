@@ -4,9 +4,6 @@
 #include<stdlib.h>
 #include<string.h>
 #include <netdb.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <signal.h>
 #include <time.h>
 
 #define MAX_RESPONSE 512
@@ -277,7 +274,7 @@ void print_dns_response(int ID, unsigned char *response){
     //kontrola flagu QR
     unsigned char qr = response[2] & 0x80;
     if(qr == 0){
-        fprintf(stderr, "prijata odpoved ma nespravnu hodnotu QR");
+        fprintf(stderr, "prijata odpoved ma nespravnu hodnotu QR \n");
         exit(ERR_RESPONSE_VALUES);
     }
 
@@ -297,7 +294,7 @@ void print_dns_response(int ID, unsigned char *response){
     case 0:
         break;
     case 1:
-        printf("Response code 1 : Server nedokazal interpretovat poziadavok");
+        printf("Response code 1 : Server nedokazal interpretovat poziadavok\n");
         exit(ERR_RESPONSE_CODE);
         break;
     case 2:
@@ -305,22 +302,21 @@ void print_dns_response(int ID, unsigned char *response){
         exit(ERR_RESPONSE_CODE);
         break;
     case 3:
-        printf("Response code 3 : Domenove meno / adresa v poziadavku neexistuje");
+        printf("Response code 3 : Domenove meno / adresa v poziadavku neexistuje\n");
         exit(ERR_RESPONSE_CODE);
         break;
     case 4:
-        printf("Response code 4 : Server nepodporuje dany typ poziadavku");
+        printf("Response code 4 : Server nepodporuje dany typ poziadavku\n");
         exit(ERR_RESPONSE_CODE);
         break;
     case 5:
-        printf("Response code 5 : Server odmietol vykonat pozadovanu operaciu");
+        printf("Response code 5 : Server odmietol vykonat pozadovanu operaciu\n");
         exit(ERR_RESPONSE_CODE);
         break;
     default:
         printf("Response code %d \n", rcode);
         exit(ERR_RESPONSE_CODE);
     }
-    // printf(" aa = %x \n tc = %x \n rd = %x \n ra = %x \n rcode = %x \n qdcount = %d \n ancount = %d \n nscount = %d \n arcount = %d \n ", aa, tc, rd, ra, rcode, qdcount, ancount, nscount, arcount);
     
     //vypisanie statistik:
     if(aa){
@@ -401,16 +397,18 @@ int get_socket_udp(){
     int type = SOCK_DGRAM;
     int nsocket = socket(family, type, 0);
     if (nsocket <= 0){
-        perror("ERROR: socket");
+        perror("ERROR: socket\n");
         exit(ERR_INTERNAL);
     }
-    struct timeval tv;                                                  //timeout
+
+    struct timeval tv;                                                  //timeout, zdroj: https://stackoverflow.com/questions/13547721/udp-socket-set-timeout
     tv.tv_sec = 1;
     tv.tv_usec = 0;
     if (setsockopt(nsocket, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
-        perror("Socket error");
+        perror("Socket error\n");
         exit(ERR_INTERNAL);
     }
+
     return nsocket;
 }
 
@@ -446,7 +444,7 @@ int main(int argc, char *argv[]){
         else if(!strcmp(argv[i], "-s") && flags == 0){
             flags = 1;
             if(argc == i+1){
-                fprintf(stderr, "Chyba: Nespravne zadane argumenty");
+                fprintf(stderr, "Chyba: Nespravne zadane argumenty\n");
                 printhelp();
             }
             i++;
@@ -455,7 +453,7 @@ int main(int argc, char *argv[]){
         else if(!strcmp(argv[i], "-p") && flagp == 0){
             flagp = 1;
             if(argc == i+1){
-                fprintf(stderr, "Chyba: Nespravne zadane argumenty");
+                fprintf(stderr, "Chyba: Nespravne zadane argumenty\n");
                 printhelp();
             }
             i++;
@@ -466,17 +464,17 @@ int main(int argc, char *argv[]){
             dotaddr = argv[i];
         }
         else{
-            fprintf(stderr, "Chyba: Nespravne zadane argumenty");
+            fprintf(stderr, "Chyba: Nespravne zadane argumenty\n");
             printhelp();
         }
     }
     if(flaga == 0 || flags == 0){
-        fprintf(stderr, "Chyba: Nespravne zadane argumenty: chyba adresa alebo server");
+        fprintf(stderr, "Chyba: Nespravne zadane argumenty: chyba adresa alebo server\n");
         printhelp();
     }
 
     if(flagx == 1 && flag6 == 1){
-        fprintf(stderr, "Kombinacia parametrov -6 a -x nieje povolena");
+        fprintf(stderr, "Kombinacia parametrov -6 a -x nieje povolena\n");
         printhelp();
     }
     int qtype = 1;             //qtype dotazu. default: 1 (A)
@@ -488,11 +486,10 @@ int main(int argc, char *argv[]){
 
     //kontrola formatu parametrov
     if(port == 0 || port > 65535){
-        fprintf(stderr, "Chyba: Nespravne zadane argumenty: nevalidne cislo portu");
+        fprintf(stderr, "Chyba: Nespravne zadane argumenty: nevalidne cislo portu\n");
         printhelp();
     }
 
-    // printf("flagr: %d \n flagx: %d \n flag6: %d \n server na ktory sa dotaz posiela: %s \n port: %d \n dotazovana adresa: %s \n", flagr, flagx, flag6, host, port, dotaddr);
     srand(time(NULL));
 
     struct sockaddr_in server_address = get_adress(host, port);
@@ -516,7 +513,7 @@ int main(int argc, char *argv[]){
                 break;
             }
             if(i == strlen(dotaddr)){
-                fprintf(stderr, "Nevalidna kombinacia adresy a parametru -x");
+                fprintf(stderr, "Nevalidna kombinacia adresy a parametru -x\n");
                 printhelp();
             }
         }
@@ -529,16 +526,10 @@ int main(int argc, char *argv[]){
     unsigned char query[qlength];
     concat(query, header, body, 12, bodysize);
 
-    //debug
-    // for(int lel = 12; lel<qlength; lel++){
-    //    printf(":%x:  ", query[lel]);
-    // }
-    //debug
-
     //odosle vytvoreny DNS dotaz
     int bytes_tx = sendto(client_socket, query, qlength,0 , addr, sizeof(server_address));
     if (bytes_tx < 0){
-        perror("ERROR: sendto");
+        perror("ERROR: sendto\n");
         exit(ERR_INTERNAL);
     }
     
