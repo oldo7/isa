@@ -389,7 +389,7 @@ void print_dns_response(int ID, unsigned char *response){
             printf("\n");
         }
     }
-
+    return;
 }
 
 int get_socket_udp(){
@@ -540,8 +540,9 @@ int main(int argc, char *argv[]){
     int bytes_rx = recvfrom(client_socket, response, MAX_RESPONSE,0, addr, &address_size);
     if (bytes_rx < 0){
        perror("Chyba: Nebola prijata ziadna odpoved od servera. Uistite sa, ze zadany server je DNS serverom. \n");
-       exit(ERR_INTERNAL);
+       exit(ERR_NO_RESPONSE);
     }
 
     print_dns_response(ID, response);
+    return 0;
 }
