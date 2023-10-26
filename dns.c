@@ -209,6 +209,7 @@ int printquestion(int* i, unsigned char* response, int onlyname){
                 break;
             }
             int nextdot = *i+response[*i];
+            (*i)++;
             for(*i;(*i)<=nextdot;(*i)++){
                 printf("%c",response[*i]);
             }

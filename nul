@@ -1,19 +1,19 @@
 Authoritative: No, Recursive: Yes, Truncated: No 
  Question section (1) 
- google.com.,AAAA,IN
+ google.com.,AAAA,IN
  Answer section (1) 
- google.com.,AAAA,IN,51,2a00:1450:4014:80f:0:0:0:200e
+ google.com.,AAAA,IN,11,2a00:1450:4014:80f:0:0:0:200e
 Authority section (4) 
- google.com.,NS,IN,155298,ns1.google.com.
-google.com.,NS,IN,155298,ns3.google.com.
-google.com.,NS,IN,155298,ns2.google.com.
-google.com.,NS,IN,155298,ns4.google.com.
+ google.com.,NS,IN,73985,ns4.google.com.
+google.com.,NS,IN,73985,ns2.google.com.
+google.com.,NS,IN,73985,ns1.google.com.
+google.com.,NS,IN,73985,ns3.google.com.
 Additional section (8) 
- ns1.google.com.,A,IN,155440,216.239.32.10
-ns1.google.com.,AAAA,IN,276484,2001:4860:4802:32:0:0:0:a
-ns2.google.com.,A,IN,155440,216.239.34.10
-ns2.google.com.,AAAA,IN,109190,2001:4860:4802:34:0:0:0:a
-ns3.google.com.,A,IN,155440,216.239.36.10
-ns3.google.com.,AAAA,IN,121400,2001:4860:4802:36:0:0:0:a
-ns4.google.com.,A,IN,155440,216.239.38.10
-ns4.google.com.,AAAA,IN,121400,2001:4860:4802:38:0:0:0:a
+ ns1.google.com.,A,IN,74127,216.239.32.10
+ns1.google.com.,AAAA,IN,195171,2001:4860:4802:32:0:0:0:a
+ns2.google.com.,A,IN,74127,216.239.34.10
+ns2.google.com.,AAAA,IN,27877,2001:4860:4802:34:0:0:0:a
+ns3.google.com.,A,IN,74127,216.239.36.10
+ns3.google.com.,AAAA,IN,40087,2001:4860:4802:36:0:0:0:a
+ns4.google.com.,A,IN,74127,216.239.38.10
+ns4.google.com.,AAAA,IN,40087,2001:4860:4802:38:0:0:0:a
