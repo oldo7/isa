@@ -5,6 +5,9 @@
 #include<string.h>
 #include <netdb.h>
 #include <time.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
 
 #define MAX_RESPONSE 512
 #define ERR_RESPONSE_CODE 1

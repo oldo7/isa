@@ -9,7 +9,7 @@ int main(int argc, char *argv[]){
     int fail = 0; 
     int status;
     //poziadavok na server ktory neodpovie
-    status = system("./dns -s localhost 2001:4860:4802:34:0:0:0:a -x > nul");
+    status = system("./dns -s 140.82.121.3 2001:4860:4802:34:0:0:0:a -x > nul");
     if(status/256 == 3){
         succ++;
     }else{

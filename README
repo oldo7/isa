@@ -1,0 +1,53 @@
+Meno: Oliver Nemček
+Login: xnemce08
+Dátum: 26.10.2023
+
+Program odosiela DNS dotazy vytvorené podľa zadaných parametrov pri spustení na server zadaný parametrom -s. Na výstup vypisuje štatistiky prijatej DNS odpovede, a jednotlivé záznamy rozdelené do 4 sekcii.
+Pre každý záznam je vypísané meno, typ, trieda, TTL a dáta. Program podporuje dotazovanie záznamov typu A, AAAA, a PTR. Pri dotazovaní typu PTR je podporované zadávanie IPv4 alebo IPv6 adresy.
+Program podporuje vypisovanie záznamov typu A, AAAA, PTR, CNAME a NS. Záznamy ostatných typov sa vypíšu iba čiastočne. 
+Ak DNS odpoveď obsahuje nenulový Opcode, nieje to považované za chybu, ale za normálny priebeh programu. Napriek tomu je tomuto ukončeniu programu pridelený samostatný návratový kód (Viď dokumentáciu).
+
+Program používa knižnicu time.h pre generovanie náhodných ID pre DNS dotaz.
+Program používa niekoľko základných funkci z knižnice string.h.
+
+Príklady spustenia:
+./dns -s arekol.kn.vutbr.cz 77.75.75.230 -r -x
+                                                                                                                                
+Authoritative: No, Recursive: Yes, Truncated: No      
+ Question section (1) 
+ 230.75.75.77.in-addr.arpa.,PTR,IN
+ Answer section (1) 
+ 230.75.75.77.in-addr.arpa.,PTR,IN,1812,ams.seznam.cz.
+Authority section (2) 
+ 75.75.77.in-addr.arpa.,NS,IN,84612,ams.seznam.cz.    
+75.75.77.in-addr.arpa.,NS,IN,84612,ans.seznam.cz.     
+Additional section (4) 
+ ams.seznam.cz.,A,IN,85349,77.75.75.230
+ams.seznam.cz.,AAAA,IN,4615,2a02:598:4444:0:0:0:0:4   
+ans.seznam.cz.,A,IN,85349,77.75.74.80
+ans.seznam.cz.,AAAA,IN,4615,2a02:598:3333:0:0:0:0:3  
+
+
+./dns -s arekol.kn.vutbr.cz www.seznam.cz -r -6
+
+Authoritative: No, Recursive: Yes, Truncated: No   
+ Question section (1) 
+ www.seznam.cz.,AAAA,IN
+ Answer section (2) 
+ www.seznam.cz.,AAAA,IN,300,2a02:598:2:0:0:0:0:1222
+www.seznam.cz.,AAAA,IN,300,2a02:598:a:0:0:0:79:222 
+Authority section (2) 
+ seznam.cz.,NS,IN,1842,ans.seznam.cz.
+seznam.cz.,NS,IN,1842,ams.seznam.cz.
+Additional section (4)
+ ams.seznam.cz.,A,IN,85285,77.75.75.230
+ams.seznam.cz.,AAAA,IN,4551,2a02:598:4444:0:0:0:0:4
+ans.seznam.cz.,A,IN,85285,77.75.74.80
+ans.seznam.cz.,AAAA,IN,4551,2a02:598:3333:0:0:0:0:3
+
+Odovzdané súbory:
+dns.c
+test1.c
+Makefile
+manual.pdf
+README
